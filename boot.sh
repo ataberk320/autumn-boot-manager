@@ -27,7 +27,7 @@ clang \
   -ffreestanding -fshort-wchar -mno-red-zone \
   -nostdlib \
   -fuse-ld=lld-link \
-  -Wl,-entry:efi_main \
+  -Wl,-entry:load_main \
   -Wl,-subsystem:efi_application \
   autumnload.o -o autumnload.efi
 
