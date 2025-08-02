@@ -1,7 +1,7 @@
 #include </usr/include/efi/efi.h>
 #include </usr/include/efi/efilib.h>
 #include <stddef.h>
-#include "autumnoskrn.h"
+
 EFI_GUID gEfiGraphicsOutputProtocolGuid;
 EFI_GUID gEfiFileInfoGuid;
 EFI_GUID gEfiSimpleFileSystemProtocolGuid;
@@ -16,6 +16,22 @@ void *memcpy(void *dest, const void *src, unsigned long len)  {
     }
     return dest;
 }
+VOID *memset(VOID *dest, INT32 value, UINTN count) {
+    UINT8 *ptr = (UINT8 *)dest;
+    while (count--) {
+        *ptr++ = (UINT8)value;
+
+    }
+    return dest;
+}
+
+VOID ZeroMem(VOID *Buffer, UINTN Size) {
+    UINT8 *Ptr = (UINT8 *)Buffer;
+    for (UINTN i = 0; i < Size; i++) {
+        Ptr[i] = 0;
+    }
+}
+
 
 VOID StatusShow(EFI_SYSTEM_TABLE *SystemTable, EFI_STATUS Status) {
     CHAR16 HexChars[] = L"0123456789ABCDEF";
@@ -45,6 +61,19 @@ VOID StatusShow(EFI_SYSTEM_TABLE *SystemTable, EFI_STATUS Status) {
     SystemTable->ConOut->OutputString(SystemTable->ConOut, Buffer);
 }
 
+CHAR16* ShowStatusString (EFI_STATUS status) {
+    switch (status) {
+        case EFI_SUCCESS: return L"EFI_SUCCESS";
+        case EFI_LOAD_ERROR: return L"EFI_LOAD_ERROR";
+        case EFI_INVALID_PARAMETER: return L"EFI_INVALID_PARAMETER";
+         case EFI_UNSUPPORTED: return L"EFI_UNSUPPORTED";
+        case EFI_NOT_FOUND: return L"EFI_NOT_FOUND";
+        case EFI_ACCESS_DENIED: return L"EFI_ACCESS_DENIED";
+        case EFI_OUT_OF_RESOURCES: return L"EFI_OUT_OF_RESOURCES";
+        default: return L"EFI_UNKNOWN_STATUS";
+    }
+}
+
 
 VOID *AllocateZeroedPool(EFI_SYSTEM_TABLE *SystemTable, UINTN Size) {
     VOID *Buffer;
@@ -66,81 +95,28 @@ VOID *Align8(VOID *Buffer) {
 
 
 
-typedef VOID (*KERNEL_ENTRY)(AUTUMN_KERNEL_HEADER*);
 
-EFI_STATUS RunKernel(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
-    EFI_FILE_PROTOCOL *RootDir = NULL, *File = NULL;
-    EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *FileSystem = NULL;
-    EFI_LOADED_IMAGE_PROTOCOL *LoadedImageProtocol = NULL;
+
+EFI_STATUS Kernel(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
     EFI_STATUS Status;
+    EFI_HANDLE KernelImageHandle = NULL;
+    CHAR16 *KernelPath = L"\\EFI\\AUTUMN\\autumnload.efi";
 
-    // Loaded Image Protocol al
-    Status = SystemTable->BootServices->HandleProtocol(
-        ImageHandle, &gEfiLoadedImageProtocolGuid, (VOID**)&LoadedImageProtocol);
-    if (EFI_ERROR(Status)) return Status;
-
- 
-    Status = SystemTable->BootServices->HandleProtocol(
-        LoadedImageProtocol->DeviceHandle, &gEfiSimpleFileSystemProtocolGuid, (VOID**)&FileSystem);
-    if (EFI_ERROR(Status)) return Status;
-
-   
-    Status = FileSystem->OpenVolume(FileSystem, &RootDir);
-    if (EFI_ERROR(Status)) return Status;
-
-    
-    Status = RootDir->Open(RootDir, &File, L"\\EFI\\AUTUMN\\autumnoskrn.exe", EFI_FILE_MODE_READ, 0);
-    if (EFI_ERROR(Status)) return Status;
-
-    
-    UINTN InfoSize = sizeof(EFI_FILE_INFO) + 200;
-    EFI_FILE_INFO *FileInfo = AllocateZeroedPool(SystemTable, InfoSize);
-    if (!FileInfo) return EFI_OUT_OF_RESOURCES;
-
-    Status = File->GetInfo(File, &gEfiFileInfoGuid, &InfoSize, FileInfo);
-    if (EFI_ERROR(Status)) return Status;
-
-    UINTN FileSize = FileInfo->FileSize;
-
-    
-    EFI_PHYSICAL_ADDRESS KernelLoadAddr = 0x100000; // Örnek: 1 MB
-    UINTN Pages = (FileSize + 0xFFF) / 0x1000;
-
-    Status = SystemTable->BootServices->AllocatePages(
-        AllocateAddress,
-        EfiLoaderCode,
-        Pages,
-        &KernelLoadAddr
-    );
-    if (EFI_ERROR(Status)) return Status;
-
-    
-    UINTN ReadSize = FileSize;
-    Status = File->Read(File, &ReadSize, (VOID*)KernelLoadAddr);
-    if (EFI_ERROR(Status)) return Status;
-
-    AUTUMN_KERNEL_HEADER *Header = (AUTUMN_KERNEL_HEADER *)KernelLoadAddr;
-    if (Header->Magic != MAGIC) {
-        SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Geçersiz Autumn kernel formatı!\r\n");
-        return EFI_LOAD_ERROR;
+    Status = SystemTable->BootServices->LoadImage(FALSE, ImageHandle, NULL, (VOID*)KernelPath, sizeof(KernelPath), &KernelImageHandle);
+    if (EFI_ERROR(Status)) {
+        return Status;
     }
 
-    
-    EFI_GRAPHICS_OUTPUT_PROTOCOL *Gop;
-    Status = SystemTable->BootServices->LocateProtocol(&gEfiGraphicsOutputProtocolGuid, NULL, (VOID**)&Gop);
-    if (!EFI_ERROR(Status)) {
-        Header->GopBase = (UINT64)Gop->Mode->FrameBufferBase;
-    } else {
-        SystemTable->ConOut->OutputString(SystemTable->ConOut, L"GOP protokolü bulunamadı!\r\n");
+    Status = SystemTable->BootServices->StartImage(KernelImageHandle, NULL, NULL);
+
+     if (EFI_ERROR(Status)) {
+        return Status;
     }
-
-    
-    KERNEL_ENTRY KernelMain = (KERNEL_ENTRY)(KernelLoadAddr + Header->EntryPoint);
-    KernelMain(Header);
-
-    
-    return EFI_SUCCESS;
 }
+
+
+
+
 
 
 
@@ -212,8 +188,8 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
             }
             if (key.UnicodeChar == L'e' || key.UnicodeChar == L'E') {
                 if (index == 1) {
-                    
-             Status = RunKernel(ImageHandle, SystemTable);
+                   Status = Kernel(ImageHandle, SystemTable);
+            
  
                       
             if (EFI_ERROR (Status)) {
@@ -225,6 +201,9 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
                     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Reason: Loader is missing or corrupted. Please load a copy of this file and try again.\r\n");
                     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"File: /EFI/AUTUMN/autumnload.efi\r\n");
                     StatusShow(SystemTable, Status);
+                    
+                    SystemTable->ConOut->OutputString(SystemTable->ConOut, L"\r\n");
+                    SystemTable->ConOut->OutputString(SystemTable->ConOut, ShowStatusString(Status));
                     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"\r\n");
                     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"\r\n");
                     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"\r\n");
@@ -243,7 +222,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
                     SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Hold power button to shut down.\r\n");
 
        
-
+    
                 }
             }
 
