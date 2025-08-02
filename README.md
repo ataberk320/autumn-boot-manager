@@ -13,3 +13,8 @@ Official bootloader preview of AutumnOS.
 
 ## To compile:
 ./boot.sh
+
+## Features
+▪︎ Loads PE32+ files from FAT32
+▪︎ Includes Secure Boot and GUI recovery tools
+
