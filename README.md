@@ -8,8 +8,7 @@ Official bootloader preview of AutumnOS.
 ![Screenshot2](https://github.com/ataberk320/autumn-boot-manager/blob/main/Screenshots%20of%20Autumn%20Boot%20Manager/2025-08-01%2019-32-09.png)
 
 ## Contributors
-[@nifanfa](https://github.com/nifanfa)
-
+[@nifanfa](https://github.com/nifanfa) 
 [@simone222222](https://github.com/simone222222)
 
 ## To compile:
