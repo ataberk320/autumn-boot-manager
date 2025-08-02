@@ -8,3 +8,4 @@ Some screenshots:
 
 ## Contributors
 [@nifanfa](https://github.com/nifanfa)
+[@simone222222](https://github.com/simone222222)
