@@ -17,15 +17,13 @@ clang \
   -o atmbootmanager.efi
 
 
-# 📁 2. ISO dizinleri oluştur
 mkdir -p iso_root/EFI/BOOT
 mkdir -p iso_root/EFI/AUTUMN
 mkdir -p iso_root/boot/grub
 
-# 📦 3. EFI dosyalarını yerleştir
 cp atmbootmanager.efi iso_root/EFI/AUTUMN/
 cp autumnoskrn.exe iso_root/EFI/AUTUMN
-# 📄 4. GRUB config ➜ BOOT dizinine taşındı
+
 cat > iso_root/boot/grub/grub.cfg <<EOF
 timeout=0
 default=0
