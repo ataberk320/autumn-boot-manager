@@ -23,4 +23,6 @@ Official bootloader preview of AutumnOS.
 
 ▪︎ Colorful interface
 
+▪︎ Only QEMU and real hardware support
+
 
