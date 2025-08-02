@@ -12,6 +12,7 @@ Official bootloader preview of AutumnOS.
 [@simone222222](https://github.com/simone222222)
 
 ## To compile:
+Ubuntu 22.04 or WSL
 ./boot.sh
 
 ## Features
