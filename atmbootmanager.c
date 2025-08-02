@@ -8,6 +8,28 @@ EFI_GUID gEfiSimpleFileSystemProtocolGuid;
 
 VOID *Align8(VOID *Buffer);
 
+VOID
+CopyMem (
+    VOID *Destination,
+    CONST VOID *Source,
+    UINTN Length
+    )
+{
+    unsigned char *d = (unsigned char *)Destination;
+    const unsigned char *s = (const unsigned char *)Source;
+    while (Length--) {
+        *d++ = *s++;
+    }
+}
+    
+UINTN StrLen (CONST CHAR16 *String) {
+    UINTN Length = 0;
+    while (String[Length] != L'\0') {
+        Length++;
+    }
+    return Length;
+}
+
 void *memcpy(void *dest, const void *src, unsigned long len)  {
     unsigned char *d = dest;
     const unsigned char *s = src;
@@ -95,23 +117,46 @@ VOID *Align8(VOID *Buffer) {
 
 
 
+EFI_DEVICE_PATH_PROTOCOL* CreateFileDevicePath(CHAR16* FilePath, EFI_SYSTEM_TABLE *SystemTable) {
+    UINTN PathLen = StrLen(FilePath);
+    UINTN DevicePathSize = sizeof(FILEPATH_DEVICE_PATH) + (PathLen * sizeof(CHAR16)) + sizeof(EFI_DEVICE_PATH_PROTOCOL);
 
+    FILEPATH_DEVICE_PATH* FileNode = AllocateZeroedPool(SystemTable, DevicePathSize);
+    if (!FileNode)
+        return NULL;
+
+    FileNode->Header.Type = MEDIA_DEVICE_PATH;
+    FileNode->Header.SubType = MEDIA_FILEPATH_DP;
+    FileNode->Header.Length[0] = (UINT8)(DevicePathSize & 0xFF);
+    FileNode->Header.Length[1] = (UINT8)((DevicePathSize >> 8) & 0xFF);
+    CopyMem(FileNode->PathName, FilePath, (PathLen + 1) * sizeof(CHAR16)); // +1 for null
+
+    // End node ekle
+    EFI_DEVICE_PATH_PROTOCOL* End = (EFI_DEVICE_PATH_PROTOCOL*)((UINT8*)FileNode + DevicePathSize - sizeof(EFI_DEVICE_PATH_PROTOCOL));
+    End->Type = END_DEVICE_PATH_TYPE;
+    End->SubType = END_ENTIRE_DEVICE_PATH_SUBTYPE;
+    End->Length[0] = sizeof(EFI_DEVICE_PATH_PROTOCOL);
+    End->Length[1] = 0;
+
+    return (EFI_DEVICE_PATH_PROTOCOL*)FileNode;
+}
 
 EFI_STATUS Kernel(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
     EFI_STATUS Status;
     EFI_HANDLE KernelImageHandle = NULL;
     CHAR16 *KernelPath = L"\\EFI\\AUTUMN\\autumnload.efi";
 
-    Status = SystemTable->BootServices->LoadImage(FALSE, ImageHandle, NULL, (VOID*)KernelPath, sizeof(KernelPath), &KernelImageHandle);
+  
+    EFI_DEVICE_PATH_PROTOCOL *DevicePath =CreateFileDevicePath(KernelPath, SystemTable);
+    if (!DevicePath) return EFI_OUT_OF_RESOURCES;
+    Status = SystemTable->BootServices->LoadImage(FALSE, ImageHandle, DevicePath, NULL, 0, &KernelImageHandle);
+    SystemTable->BootServices->FreePool(DevicePath);
     if (EFI_ERROR(Status)) {
         return Status;
     }
 
     Status = SystemTable->BootServices->StartImage(KernelImageHandle, NULL, NULL);
-
-     if (EFI_ERROR(Status)) {
-        return Status;
-    }
+    return Status;
 }
 
 
@@ -262,3 +307,4 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
     }
     return EFI_SUCCESS;
 }
+
