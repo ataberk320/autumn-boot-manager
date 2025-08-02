@@ -11,3 +11,6 @@ Official bootloader preview of AutumnOS.
 [@nifanfa](https://github.com/nifanfa)
 
 [@simone222222](https://github.com/simone222222)
+
+##To compile:
+./boot.sh
