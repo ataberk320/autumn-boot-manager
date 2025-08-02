@@ -60,8 +60,7 @@ VOID *Align8(VOID *Buffer) {
     return (VOID*)(((UINTN)Buffer + 7) & ~((UINTN)7));
 }
 
-// İşte Load ve Start yapan fonksiyon
-// 1. LoadFileToBuffer içindeki HandleProtocol kullanımı düzeltilmeli
+
 
 
 
@@ -80,20 +79,20 @@ EFI_STATUS RunKernel(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
         ImageHandle, &gEfiLoadedImageProtocolGuid, (VOID**)&LoadedImageProtocol);
     if (EFI_ERROR(Status)) return Status;
 
-    // Simple File System Protocol al
+ 
     Status = SystemTable->BootServices->HandleProtocol(
         LoadedImageProtocol->DeviceHandle, &gEfiSimpleFileSystemProtocolGuid, (VOID**)&FileSystem);
     if (EFI_ERROR(Status)) return Status;
 
-    // Kök dizini aç
+   
     Status = FileSystem->OpenVolume(FileSystem, &RootDir);
     if (EFI_ERROR(Status)) return Status;
 
-    // Kernel dosyasını aç
+    
     Status = RootDir->Open(RootDir, &File, L"\\EFI\\AUTUMN\\autumnoskrn.exe", EFI_FILE_MODE_READ, 0);
     if (EFI_ERROR(Status)) return Status;
 
-    // Dosya boyutu bilgisi al
+    
     UINTN InfoSize = sizeof(EFI_FILE_INFO) + 200;
     EFI_FILE_INFO *FileInfo = AllocateZeroedPool(SystemTable, InfoSize);
     if (!FileInfo) return EFI_OUT_OF_RESOURCES;
@@ -103,7 +102,7 @@ EFI_STATUS RunKernel(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
     UINTN FileSize = FileInfo->FileSize;
 
-    // Bellek sayfa olarak ayır
+    
     EFI_PHYSICAL_ADDRESS KernelLoadAddr = 0x100000; // Örnek: 1 MB
     UINTN Pages = (FileSize + 0xFFF) / 0x1000;
 
@@ -115,7 +114,7 @@ EFI_STATUS RunKernel(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
     );
     if (EFI_ERROR(Status)) return Status;
 
-    // Dosyayı belleğe oku
+    
     UINTN ReadSize = FileSize;
     Status = File->Read(File, &ReadSize, (VOID*)KernelLoadAddr);
     if (EFI_ERROR(Status)) return Status;
@@ -126,7 +125,7 @@ EFI_STATUS RunKernel(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
         return EFI_LOAD_ERROR;
     }
 
-    // GOP framebuffer adresini bul ve kernel header'a yaz
+    
     EFI_GRAPHICS_OUTPUT_PROTOCOL *Gop;
     Status = SystemTable->BootServices->LocateProtocol(&gEfiGraphicsOutputProtocolGuid, NULL, (VOID**)&Gop);
     if (!EFI_ERROR(Status)) {
@@ -135,11 +134,11 @@ EFI_STATUS RunKernel(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
         SystemTable->ConOut->OutputString(SystemTable->ConOut, L"GOP protokolü bulunamadı!\r\n");
     }
 
-    // Kernel giriş fonksiyonunu çağır
+    
     KERNEL_ENTRY KernelMain = (KERNEL_ENTRY)(KernelLoadAddr + Header->EntryPoint);
     KernelMain(Header);
 
-    // Normalde kernelden dönülmez, ama dönerse:
+    
     return EFI_SUCCESS;
 }
 
