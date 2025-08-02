@@ -16,5 +16,11 @@ Official bootloader preview of AutumnOS.
 
 ## Features
 ▪︎ Loads PE32+ files from FAT32
+
 ▪︎ Includes Secure Boot and GUI recovery tools
+
+▪︎ Shows status in string format
+
+▪︎ Colorful interface
+
 
