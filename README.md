@@ -13,6 +13,10 @@ Official bootloader preview of AutumnOS.
 
 ## To compile:
 Ubuntu 22.04 or WSL
+
+
+Requires clang, lld-link,grub, xorriso
+ 
 ./boot.sh
 
 ## Features
