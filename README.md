@@ -1,4 +1,4 @@
-Official bootloader preview of AutumnOS.
+Official bootloader and kernel of AutumnOS.
 ## What the bugs are?
  Throws 0x3 and doesn't start kernel and
           settings and tools is not completed.
